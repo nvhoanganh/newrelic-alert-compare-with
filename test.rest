@@ -1,0 +1,18 @@
+###
+POST https://api.newrelic.com/graphql
+Content-Type: application/json
+API-Key: NRAK-xxxxxxxxxxxxxxxx
+X-REQUEST-TYPE: GraphQL
+
+query {
+  actor {
+              account(id: ACCOUNT_NUMER) {
+                nrql(query: "SELECT average(apm.service.transaction.duration) * 1000 AS ReturnValue FROM Metric WHERE appName ='sock-shop-frontend' AND transactionType = 'Web' SINCE 1 hours AGO compare with 1 day ago") {
+                  results
+                  metadata {
+                    facets
+                  }
+                }
+              }
+            }
+}
