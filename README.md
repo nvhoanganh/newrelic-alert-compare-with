@@ -14,6 +14,7 @@
     -   TASKS[0].id: you can keep it as `frontendResponseTime` or change it to anything you want (you will need this later)
     -   TASKS[0].name: you can name it anything you want
     -   TASKS[0].query: this is the NRQL which is used to query the application performance and compare it with previous period => modify it as required
+    -   TASKS[0].selector: the column returned from the above query
 -   click on `Validate` => make sure it is successful
 -   if successful , click on `Save monitor`
 
