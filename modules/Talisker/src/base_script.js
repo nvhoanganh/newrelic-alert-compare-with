@@ -17,7 +17,7 @@ const TASKS = [
         "id": "frontendError",
         "name": "Frontend error Rate of Change",
         "accountId": AccountId,
-        "selector": "ReturnValue",
+        "selector": "ReturnValue", //this is the return column name from Query, if your NRQL return different column name, make sure you type it here
         "chaining": "NONE",
         "fillNullValue": 0,
         "invertResult": false,
@@ -67,8 +67,8 @@ if (IS_LOCAL_ENV) {
     RUNNING_LOCALLY = true
     var $http = require("request");       //only for local development testing
     var $secure = {}                      //only for local development testing
-    QUERY_KEY = "NRAK-E695VCGVL65HLP8UEIC81U4S3CP"  //NRAK...
-    INSERT_KEY = "ce099b2bea8e2c84667b0e8ab64e050cFFFFNRAL"  //NRII...
+    QUERY_KEY = "NRAK-...."  //NRAK...
+    INSERT_KEY = "251fdb7....."  //NRII...
 
     console.log("Running in local mode", true)
 }
@@ -167,6 +167,7 @@ const sendDataToNewRelic = async (data) => {
     }
     log("\nSending data to NR metrics API...")
     return genericServiceCall([200, 202], request, (body, response, error) => {
+        console.log("🚀 ~ response from New Relic: ", response.body)
         if (error) {
             log(`NR Post failed : ${error} `, true)
             return false
@@ -216,7 +217,13 @@ async function runtasks(tasks) {
         await genericServiceCall([200], options, (body) => { return body })
             .then((body) => {
                 try {
-                    bodyJSON = body
+                    if (typeof body === 'string') {
+                        bodyJSON = JSON.parse(body)
+                    } else {
+                        bodyJSON = body;
+                    }
+
+                    console.log("🚀 ~ JSON Response from New Relic Query:", JSON.stringify(bodyJSON, null, 2));
 
                     let resultData = {}
                     let result = null
@@ -225,7 +232,11 @@ async function runtasks(tasks) {
                     if (bodyJSON.data.actor.account.nrql.results.length == 2 && bodyJSON.data.actor.account.nrql.results[0].comparison && bodyJSON.data.actor.account.nrql.results[0].comparison) {
                         let previous = bodyJSON.data.actor.account.nrql.results.find((item) => { return item.comparison === "previous" })[task.selector]
                         let current = bodyJSON.data.actor.account.nrql.results.find((item) => { return item.comparison === "current" })[task.selector]
-                        result = ((current - previous) / current) * 100
+                        if (current === 0) {
+                            result = 100;
+                        } else {
+                            result = ((current - previous) / current) * 100
+                        }
                     } else if (bodyJSON.data.actor.account.nrql.metadata &&
                         bodyJSON.data.actor.account.nrql.metadata.facets &&
                         bodyJSON.data.actor.account.nrql.metadata.facets.length > 0) {
@@ -280,7 +291,6 @@ async function runtasks(tasks) {
                         }
                         return transformedResult
                     }
-
 
                     if (Array.isArray(result)) {
                         result = result.map((x) => { x.value = transformData(x.value); return x; })
@@ -368,9 +378,12 @@ async function runtasks(tasks) {
     let metricsPayLoad = [{
         "common": commonMetricBlock,
         "metrics": metricsInnerPayload
-    }]
+    }];
+
+    console.log("🚀 ~ pushing to New Relic Metric:", JSON.stringify(metricsPayLoad, null, 2))
 
     let NRPostStatus = await sendDataToNewRelic(metricsPayLoad)
+
     if (NRPostStatus === true) {
         setAttribute("nrPostStatus", "success")
         log("NR Post successful")
